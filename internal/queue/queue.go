@@ -1,4 +1,4 @@
-package main
+package queue
 
 import (
 	"context"
@@ -10,8 +10,6 @@ import (
 
 const queueKey = "message"
 
-var ctx = context.Background()
-
 type Message struct {
 	ID      int    `json:"id"`
 	Message string `json:"message"`
@@ -21,18 +19,22 @@ type Queue struct {
 	rdb *redis.Client
 }
 
+func New(rdb *redis.Client) *Queue {
+	return &Queue{rdb: rdb}
+}
+
 func (q *Queue) Enqueue(ctx context.Context, msg Message) error {
 	data, err := json.Marshal(msg)
 	if err != nil {
 		return err
 	}
-	// add to the left side of the redis list
+	// Add to the left side of the Redis list.
 	return q.rdb.LPush(ctx, queueKey, data).Err()
 }
 
 func (q *Queue) Dequeue(ctx context.Context) (Message, error) {
-	// wait until a message is availabe , then remove
-	// it from the right side of the list
+	// Block until a message is available, then remove
+	// it from the right side of the list.
 	result, err := q.rdb.BRPop(ctx, 0, queueKey).Result()
 	if err != nil {
 		return Message{}, err
@@ -44,17 +46,16 @@ func (q *Queue) Dequeue(ctx context.Context) (Message, error) {
 	}
 
 	return msg, nil
-
 }
 
 func (q *Queue) PrintQueue(ctx context.Context) error {
-	message, err := q.rdb.LRange(ctx, queueKey, 0, -1).Result()
+	messages, err := q.rdb.LRange(ctx, queueKey, 0, -1).Result()
 	if err != nil {
 		return err
 	}
 
 	fmt.Println("-----Current Redis Queue--------")
-	for i, data := range message {
+	for i, data := range messages {
 		var msg Message
 		if err := json.Unmarshal([]byte(data), &msg); err != nil {
 			fmt.Printf("Index %d: invalid message: %v\n", i, err)

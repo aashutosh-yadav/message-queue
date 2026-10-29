@@ -6,6 +6,10 @@ import (
 	"net/http"
 
 	"github.com/redis/go-redis/v9"
+
+	"message-queue/internal/handler"
+	"message-queue/internal/queue"
+	"message-queue/internal/worker"
 )
 
 func main() {
@@ -15,7 +19,6 @@ func main() {
 	rdb := redis.NewClient(&redis.Options{
 		Addr: "localhost:6379",
 	})
-
 	defer rdb.Close()
 
 	// Verify the connection.
@@ -23,18 +26,13 @@ func main() {
 		log.Fatalf("Cannot connect to Redis: %v", err)
 	}
 
-	q := &Queue{rdb: rdb}
+	q := queue.New(rdb)
 
 	// Start the background consumer.
-	go worker(q)
+	go worker.Run(ctx, q)
 
 	// Register the POST endpoint.
-	http.HandleFunc("/messages", func(
-		w http.ResponseWriter,
-		r *http.Request,
-	) {
-		enqueueHandler(w, r, q)
-	})
+	http.HandleFunc("/messages", handler.Enqueue(q))
 
 	log.Println("Server running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
