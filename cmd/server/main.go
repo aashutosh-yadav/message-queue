@@ -7,7 +7,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"message-queue/internal/handler"
+	"message-queue/internal/producer"
 	"message-queue/internal/queue"
 	"message-queue/internal/worker"
 )
