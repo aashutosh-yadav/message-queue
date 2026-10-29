@@ -14,10 +14,10 @@ The endpoint replies `202 Accepted` as soon as the message is in Redis, it doesn
 
 You need Go and Redis.
 
-Start Redis (Docker is the easiest):
+Start Redis :
 
 ```bash
-docker run -d --name redis -p 6379:6379 redis:7
+redis-server
 ```
 
 Then run the server:
