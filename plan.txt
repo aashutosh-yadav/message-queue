@@ -1,0 +1,13 @@
+fist goes the producer
+
+first the channel only queue
+second the slice
+ring buffer
+third append only log
+fourth embedded database
+
+message broker
+
+for consumer we will use go routines
+
+then acknowledgement
