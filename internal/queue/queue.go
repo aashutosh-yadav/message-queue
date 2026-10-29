@@ -23,6 +23,7 @@ func New(rdb *redis.Client) *Queue {
 	return &Queue{rdb: rdb}
 }
 
+// queue
 func (q *Queue) Enqueue(ctx context.Context, msg Message) error {
 	data, err := json.Marshal(msg)
 	if err != nil {
@@ -32,6 +33,7 @@ func (q *Queue) Enqueue(ctx context.Context, msg Message) error {
 	return q.rdb.LPush(ctx, queueKey, data).Err()
 }
 
+// dequeue
 func (q *Queue) Dequeue(ctx context.Context) (Message, error) {
 	// Block until a message is available, then remove
 	// it from the right side of the list.

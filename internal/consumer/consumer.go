@@ -1,4 +1,4 @@
-package worker
+package consumer
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 )
 
 // Run consumes messages from the queue until ctx is cancelled.
-func Run(ctx context.Context, q *queue.Queue) {
+func Run(ctx context.Context, q *queue.Queue, id int) {
 	for {
 		if ctx.Err() != nil {
 			return
@@ -25,8 +25,12 @@ func Run(ctx context.Context, q *queue.Queue) {
 			continue
 		}
 
-		log.Printf("Processing message %d: %s", msg.ID, msg.Message)
+		log.Printf("worker %d: processing message %d: %s", id, msg.ID, msg.Message)
 
+		// Simulate a slow task.
+		time.Sleep(2 * time.Second)
+
+		log.Printf("worker %d: finished processing %d", id, msg.ID)
 		// Perform your actual task here.
 	}
 }

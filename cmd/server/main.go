@@ -7,9 +7,9 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
+	"message-queue/internal/consumer"
 	"message-queue/internal/producer"
 	"message-queue/internal/queue"
-	"message-queue/internal/worker"
 )
 
 func main() {
@@ -29,7 +29,11 @@ func main() {
 	q := queue.New(rdb)
 
 	// Start the background consumer.
-	go worker.Run(ctx, q)
+	const numWorker = 5
+
+	for i := 1; i <= numWorker; i++ {
+		go consumer.Run(ctx, q, i)
+	}
 
 	// Register the POST endpoint.
 	http.HandleFunc("/messages", handler.Enqueue(q))
