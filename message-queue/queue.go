@@ -57,11 +57,11 @@ func (q *Queue) PrintQueue(ctx context.Context) error {
 	for i, data := range message {
 		var msg Message
 		if err := json.Unmarshal([]byte(data), &msg); err != nil {
-			fmt.Println("Index %d: invalid message: %v\n", i, err)
+			fmt.Printf("Index %d: invalid message: %v\n", i, err)
 			continue
 		}
 
-		fmt.Println("Index : %d | ID : %d | Message: %s\n",
+		fmt.Printf("Index : %d | ID : %d | Message: %s\n",
 			i, msg.ID, msg.Message)
 	}
 	fmt.Println("---------------------------------")
