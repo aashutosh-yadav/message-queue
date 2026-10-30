@@ -34,10 +34,31 @@ go run ./cmd/server
 
 It listens on `localhost:8080`. Send a message like this:
 
+For sending single message.
+
 ```bash
 curl -X POST localhost:8080/messages \
   -H "Content-Type: application/json" \
   -d '{"id":1,"message":"hello"}'
+```
+
+This is for multiple messages .
+
+```bash
+for i in $(seq 1 20); do
+  curl -s -X POST localhost:8080/messages \
+    -H "Content-Type: application/json" \
+    -d "{\"id\":$i,\"message\":\"msg $i\"}" > /dev/null
+done
+```
+
+Test bad requests
+
+```bash
+curl -i localhost:8080/messages                                        # 405
+curl -i -X POST localhost:8080/messages -d 'not json'                  # 400
+curl -i -X POST localhost:8080/messages \
+  -H "Content-Type: application/json" -d '{"id":0,"message":""}'      # 400
 ```
 
 You'll see the consumer pick it up in the server logs.

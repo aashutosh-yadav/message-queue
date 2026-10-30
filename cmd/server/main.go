@@ -21,22 +21,23 @@ func main() {
 	})
 	defer rdb.Close()
 
-	// Verify the connection.
-	if err := rdb.Ping(ctx).Err(); err != nil {
+	// Check the connection.
+	err := rdb.Ping(ctx).Err()
+	if err != nil {
 		log.Fatalf("Cannot connect to Redis: %v", err)
 	}
 
 	q := queue.New(rdb)
 
-	// Start the background consumer.
-	const numWorker = 5
-
-	for i := 1; i <= numWorker; i++ {
+	// Start 5 consumers.
+	for i := 1; i <= 5; i++ {
 		go consumer.Run(ctx, q, i)
 	}
 
-	// Register the POST endpoint.
-	http.HandleFunc("/messages", handler.Enqueue(q))
+	// POST endpoint.
+	http.HandleFunc("/messages", func(w http.ResponseWriter, r *http.Request) {
+		producer.Enqueue(w, r, q)
+	})
 
 	log.Println("Server running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))

@@ -8,44 +8,61 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// three redis list
 const queueKey = "message"
+const processingKey = "message:processing"
+const deadKey = "message:dead"
 
 type Queue struct {
 	rdb *redis.Client
 }
 
+// New creates a Queue that uses the given Redis client.
 func New(rdb *redis.Client) *Queue {
 	return &Queue{rdb: rdb}
 }
 
-// queue
-func (q *Queue) Enqueue(ctx context.Context, msg Message) error {
+// Enqueue adds a message to the left side of the list.
+func Enqueue(ctx context.Context, q *Queue, msg Message) error {
 	data, err := json.Marshal(msg)
 	if err != nil {
 		return err
 	}
-	// Add to the left side of the Redis list.
 	return q.rdb.LPush(ctx, queueKey, data).Err()
 }
 
-// dequeue
-func (q *Queue) Dequeue(ctx context.Context) (Message, error) {
-	// Block until a message is available, then remove
-	// it from the right side of the list.
-	result, err := q.rdb.BRPop(ctx, 0, queueKey).Result()
+// Dequeue waits for a message and MOVES it to the processing list
+// (it is not deleted yet). It returns the message and its raw text,
+// which we need later for Ack and Dead.
+func Dequeue(ctx context.Context, q *Queue) (Message, string, error) {
+	raw, err := q.rdb.BLMove(ctx, queueKey, processingKey, "RIGHT", "LEFT", 0).Result()
 	if err != nil {
-		return Message{}, err
+		return Message{}, "", err
 	}
 
 	var msg Message
-	if err := json.Unmarshal([]byte(result[1]), &msg); err != nil {
-		return Message{}, err
+	err = json.Unmarshal([]byte(raw), &msg)
+	if err != nil {
+		// Broken message: put it in the dead list so it doesn't get stuck.
+		Dead(ctx, q, raw)
+		Ack(ctx, q, raw)
+		return Message{}, "", err
 	}
 
-	return msg, nil
+	return msg, raw, nil
 }
 
-func (q *Queue) PrintQueue(ctx context.Context) error {
+// Ack removes a finished message from the processing list.
+func Ack(ctx context.Context, q *Queue, raw string) error {
+	return q.rdb.LRem(ctx, processingKey, 1, raw).Err()
+}
+
+// Dead stores a message that failed every attempt.
+func Dead(ctx context.Context, q *Queue, raw string) error {
+	return q.rdb.LPush(ctx, deadKey, raw).Err()
+}
+
+func PrintQueue(ctx context.Context, q *Queue) error {
 	messages, err := q.rdb.LRange(ctx, queueKey, 0, -1).Result()
 	if err != nil {
 		return err
@@ -54,13 +71,12 @@ func (q *Queue) PrintQueue(ctx context.Context) error {
 	fmt.Println("-----Current Redis Queue--------")
 	for i, data := range messages {
 		var msg Message
-		if err := json.Unmarshal([]byte(data), &msg); err != nil {
+		err := json.Unmarshal([]byte(data), &msg)
+		if err != nil {
 			fmt.Printf("Index %d: invalid message: %v\n", i, err)
 			continue
 		}
-
-		fmt.Printf("Index : %d | ID : %d | Message: %s\n",
-			i, msg.ID, msg.Message)
+		fmt.Printf("Index : %d | ID : %d | Message: %s\n", i, msg.ID, msg.Message)
 	}
 	fmt.Println("---------------------------------")
 
