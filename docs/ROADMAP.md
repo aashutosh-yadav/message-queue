@@ -10,7 +10,7 @@
 2. Slice / ring buffer
 3. Append-only log
 4. Embedded database
-5. Message broker (Redis, current)
+5. Redis list (current)
 
 ## Consumer
 

@@ -1,11 +1,16 @@
-# message-broker
+# message-queue
 
-A small message queue I built in Go to learn how producers, brokers and consumers work together.
+A small message queue I built in Go to learn how producers, queues and consumers work together.
 
 You send a message to an HTTP endpoint, it gets pushed into a Redis list, and a few goroutines pick messages up from the other end and process them in the background.
 
-```
-client -> POST /messages -> Redis list -> consumer goroutines
+```mermaid
+flowchart LR
+    C[Client] -->|POST /messages| H[HTTP handler]
+    H -->|LPUSH| R[(Redis list)]
+    R -->|BRPOP| W1[Worker 1]
+    R -->|BRPOP| W2[Worker 2]
+    R -->|BRPOP| W3[Workers 3-5]
 ```
 
 The endpoint replies `202 Accepted` as soon as the message is in Redis, it doesn't wait for the processing to finish.
