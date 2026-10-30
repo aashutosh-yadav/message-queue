@@ -10,11 +10,6 @@ import (
 
 const queueKey = "message"
 
-type Message struct {
-	ID      int    `json:"id"`
-	Message string `json:"message"`
-}
-
 type Queue struct {
 	rdb *redis.Client
 }
