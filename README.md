@@ -10,7 +10,7 @@ flowchart LR
     H -->|LPUSH| R[(Redis list)]
     R -->|BRPOP| W1[Worker 1]
     R -->|BRPOP| W2[Worker 2]
-    R -->|BRPOP| W3[Workers 3-5]
+    R -->|BRPOP| W3[Workers N]
 ```
 
 The endpoint replies `202 Accepted` as soon as the message is in Redis, it doesn't wait for the processing to finish.
